@@ -1,0 +1,1 @@
+# SpottyAI

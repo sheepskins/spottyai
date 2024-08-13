@@ -1,5 +1,5 @@
 {
     "weights": "config/yolov5s.pt",
     "categories": "config/mscoco.csv",
-    "spot_cams": ["camera/back", "camera/frontleft", "camera/frontright", "camera/right", "camera/left"]
+    "spot_cams": ["depth/back", "depth/frontleft", "depth/frontright", "depth/right", "depth/left"]
 }

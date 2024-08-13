@@ -8,7 +8,7 @@ from cv_bridge import CvBridge
 from image_geometry import PinholeCameraModel
 import tf2_ros, tf2_geometry_msgs
 
-
+# ADD Depth and Images
 class Detector:
     """docstring for detector."""
     def __init__(self, config):
@@ -54,12 +54,33 @@ class RosBridge:
         self._as = actionlib.SimpleActionServer('object_detect', object_action, execute_cb = self.callback, auto_start = False)
         self._as.start()
         self.bridge = CvBridge()
+        self.projector = Reproject()
 
     def callback(self, category):
+        detections_df = pd.DataFrame()
         for cam in self.spot_cams: 
-            im_topic = cam + "/image"
-            info_topic = cam + "/info"
-            im = rospy.wait_for_message(im_topic, image)
+            im_topic = cam + "/depth_in_visual"
+            info_topic = cam + "/depth_in_visual/camera_info"
+            im = rospy.wait_for_message(im_topic, Image)
+            info = rospy.wait_for_message(info_topic, CameraInfo)
+            cv_im = self.bridge.imgmsg_to_cv2(im, desired_encoding='bgr8')
+            df = self.ros_detector.detect(cv_im, category)
+            for detection in df: 
+                centre_x = (detection[0] + detection[2])/2
+                centre_y = (detection[1] + detection[3])/2
+                self.projector.reproject(im, centre_x, centre_y, info)
+
+
+            df['camera'] = info_topic
+            detections_df = pd.concat([detections_df, df], ignore_index=True)
+        
+        
+
+        
+
+        
+
+            
 
 
 

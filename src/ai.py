@@ -1,9 +1,8 @@
-import rospy
+import detection.detector as detector
 
-class ClassName(object):
-    """docstring for ClassName."""
-    def __init__(self, arg):
-        super(ClassName, self).__init__()
-    arg
+def say(string):
+    print(string)
 
-    
+def ask(string):
+    string = string + ": "
+    return input(string)

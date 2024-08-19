@@ -1,0 +1,4 @@
+string category
+---
+int32 status
+string detection_results

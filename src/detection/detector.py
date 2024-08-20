@@ -5,7 +5,6 @@ import json
 import os
 import actionlib
 from cv_bridge import CvBridge
-from image_geometry import PinholeCameraModel
 import tf2_ros
 from sensor_msgs.msg import Image, CameraInfo
 import tf2_geometry_msgs
@@ -40,15 +39,7 @@ class Detector:
             return False
         return filtered_detections.iloc[:,:4]
     
-# class Reproject:
-#     """docstring for Reproject."""
-#     def __init__(self, arg):
-#         self.camera_model  = PinholeCameraModel()
-#         self.tf_buffer = tf2_ros.Buffer()
-#         self.tf_listenener = tf2_ros.TransformListener(self.tf_buffer)
-        
-#     def reproject(self, im, centre_x, centre_y, info):
-#         self.camera_model.fromCameraInfo(info)
+
         
 
 class RosBridge:
@@ -65,15 +56,25 @@ class RosBridge:
         success = 1
         try:
             for cam in self.spot_cams: 
-                im_topic = cam + "/image"
-                info_topic = cam + "/camera_info"
+                im_topic = "camera/" + cam + "/image"
+                depth_topic = "depth/" + cam + "/image"
                 im = rospy.wait_for_message(im_topic, Image)
-                info = rospy.wait_for_message(info_topic, CameraInfo)
+                depth_im = rospy.wait_for_message(depth_topic, CameraInfo)
                 cv_im = self.bridge.imgmsg_to_cv2(im)
+                depth_cv_im = self.bridge.imgmsg_to_cv2(depth_im)
                 df = self.ros_detector.detect(cv_im, category)
+                
                 if df is not False:        
-                    df['camera'] = info_topic
-                    detections_df = pd.concat([detections_df, df], ignore_index=True)
+                    simple_df = pd.DataFrame()
+                    for index, row in df.iterrows(): 
+                        x = (row['x2'] - row['x1'])/2
+                        y = (row['y2'] - row['y1'])/2 
+                        simple_df.at[index, 'u'] = x
+                        simple_df.at[index, 'v'] = y
+                        simple_df.at[index, 'depth'] = depth_cv_im[x,y]
+                        simple_df.at[index, 'category'] = row['category']
+                    simple_df['camera'] = cam
+                    detections_df = pd.concat([simple_df, df], ignore_index=True)
             if ~detections_df.empty:
                 success = 1
                 string =  detections_df.to_json(orient='split')

@@ -10,6 +10,7 @@ from geometry_msgs.msg import PointStamped
 from image_geometry import PinholeCameraModel
 import tf2_ros
 import tf2_geometry_msgs
+from spot_msgs.msg import PoseBodyAction, PoseBodyResult, PoseBodyFeedback, PoseBodyGoal
 
 def detection_client(category):
     rospy.wait_for_service('detection_service')
@@ -28,8 +29,6 @@ def detection_client(category):
 def move_to(x,y):
     client = actionlib.SimpleActionClient('trajectory', TrajectoryAction)
     
-    client.wait_for_server()
-
     goal = TrajectoryGoal()
 
     goal.target_pose.header.stamp = rospy.Time.now()
@@ -39,6 +38,8 @@ def move_to(x,y):
     goal.duration = rospy.Duration(120)
 
     goal.precise_positioning = 0
+    
+    client.wait_for_server()
 
     client.send_goal(goal)
 
@@ -98,3 +99,17 @@ def say(string):
 def ask(string):
     string = string + ": "
     return input(string)
+    
+def pose(roll, pitch, yaw, body_height): 
+    client = actionlib.SimpleActionClient('pose', PoseBodyAction)
+    pose = PoseBodyGoal()
+    pose.roll = max(min(roll, 20), -20)
+    pose.pitch = max(min(pitch, 30), -30)
+    pose.yaw = max(min(yaw, 30), -30)
+    pose.body_height = max(min(body_height, 0.1), -0.1)
+
+    client.wait_for_server()
+
+    client.send_goal_and_wait(pose)
+
+    return(client.get_result())

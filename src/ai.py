@@ -12,7 +12,7 @@ import tf2_ros
 import tf2_geometry_msgs
 from spot_msgs.msg import PoseBodyAction, PoseBodyResult, PoseBodyFeedback, PoseBodyGoal
 
-def detection_client(category):
+def detect(category):
     rospy.wait_for_service('detection_service')
     try:
         detect = rospy.ServiceProxy('detection_service', detection)

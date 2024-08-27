@@ -4,7 +4,7 @@ from autogen import ConversableAgent
 from autogen.coding import LocalCommandLineCodeExecutor
 import tempfile
 
-#find system prompt
+#find system prompts
 script_dir = os.path.dirname(os.path.abspath(__file__))
 coder_relative_file = 'knowledge/coder_prompt.xml'
 coder_path = os.path.join(script_dir, coder_relative_file)

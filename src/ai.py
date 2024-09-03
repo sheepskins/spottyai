@@ -12,11 +12,11 @@ import tf2_ros
 import tf2_geometry_msgs
 from spot_msgs.msg import PoseBodyAction, PoseBodyResult, PoseBodyFeedback, PoseBodyGoal
 
-def detect(category):
+def detect(categories):
     rospy.wait_for_service('detection_service')
     try:
-        detect = rospy.ServiceProxy('detection_service', detection)
-        response = detect(category)
+        detector = rospy.ServiceProxy('detection_service', detection)
+        response = detector(categories)
         if response.status == 2:
             df = pd.read_json(response.detection_results, orient='split')
             return df

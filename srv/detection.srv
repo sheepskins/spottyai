@@ -1,4 +1,4 @@
-string category
+string categories
 ---
 int32 status
 string detection_results

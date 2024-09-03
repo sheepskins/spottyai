@@ -29,12 +29,13 @@ class Detector:
         self.model.max_det = 1000  # maximum number of detections per image
         self.categories = pd.read_csv(os.path.join(base_dir,self.config.get('categories')), header=None, names=['category', 'labels'])
     
-    def detect(self, img, category):
+    def detect(self, img, key_cats):
         results = self.model(img)
+        key_cats = [cat.lower() for cat in key_cats]
         categories = ['x1', 'y1', 'x2', 'y2', 'score', 'category']
         predictions = pd.DataFrame(results.pred[0].cpu(), columns=categories)
         detections = predictions.merge(self.categories, on = 'category')
-        filtered_detections = detections.loc[detections['labels'].str.lower() == str(category).lower()]
+        filtered_detections = detections[detections['category'].isin(key_cats)]
         if filtered_detections.empty:
             return False
         return filtered_detections.iloc[:,:4]
@@ -50,7 +51,7 @@ class RosBridge:
 
         self.bridge = CvBridge()
 
-    def callback(self, category):
+    def callback(self, categories):
         detections_df = pd.DataFrame()
         string = ""
         success = 1
@@ -62,7 +63,7 @@ class RosBridge:
                 depth_im = rospy.wait_for_message(depth_topic, CameraInfo)
                 cv_im = self.bridge.imgmsg_to_cv2(im)
                 depth_cv_im = self.bridge.imgmsg_to_cv2(depth_im)
-                df = self.ros_detector.detect(cv_im, category)
+                df = self.ros_detector.detect(cv_im, categories)
                 
                 if df is not False:        
                     simple_df = pd.DataFrame()
@@ -84,8 +85,8 @@ class RosBridge:
         return success, string
         
     def service_handle(self, req):
-        category = req.category
-        success, dataframe_json  = self.callback(category)
+        categories = [category.strip() for category in req.categories.split(',')]
+        success, dataframe_json  = self.callback(categories)
         return detectionResponse(success, dataframe_json)
 
 

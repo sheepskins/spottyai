@@ -1,7 +1,5 @@
 from sensor_msgs.msg import CameraInfo
-import detection.detector as detector
 import rospy
-import pandas as pd
 from spottyai.srv import detection, detectionResponse
 from spot_msgs.msg import TrajectoryAction, TrajectoryResult, TrajectoryFeedback, TrajectoryGoal
 from std_msgs.msg import Duration
@@ -11,6 +9,14 @@ from image_geometry import PinholeCameraModel
 import tf2_ros
 import tf2_geometry_msgs
 from spot_msgs.msg import PoseBodyAction, PoseBodyResult, PoseBodyFeedback, PoseBodyGoal
+
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+
+import detection.detector as detector
+
+import pandas as pd
 
 def detect(categories):
     rospy.wait_for_service('detection_service')

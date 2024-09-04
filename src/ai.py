@@ -8,7 +8,7 @@ from geometry_msgs.msg import PointStamped
 from image_geometry import PinholeCameraModel
 import tf2_ros
 import tf2_geometry_msgs
-from spot_msgs.msg import PoseBodyAction, PoseBodyResult, PoseBodyFeedback, PoseBodyGoal
+from spot_msgs.srv import PosedStand
 
 import sys
 import os
@@ -20,10 +20,11 @@ import pandas as pd
 
 def detect(categories):
     rospy.wait_for_service('detection_service')
+    print(f'looking for {categories}')
     try:
         detector = rospy.ServiceProxy('detection_service', detection)
         response = detector(categories)
-        if response.status == 2:
+        if response.status == 1:
             df = pd.read_json(response.detection_results, orient='split')
             return df
         else: 
@@ -91,7 +92,7 @@ def reproject(u, v, depth, cam):
 
 
 def get_camera_info_once(cam):
-    topic = 'camera/' + cam + "/camera_info"
+    topic = 'spot/camera/' + cam + "/camera_info"
     # Wait for a single message from the /camera_info topic
     camera_info_msg = rospy.wait_for_message(topic, CameraInfo)
 
@@ -107,15 +108,11 @@ def ask(string):
     return input(string)
     
 def pose(roll, pitch, yaw, body_height): 
-    client = actionlib.SimpleActionClient('pose', PoseBodyAction)
-    pose = PoseBodyGoal()
-    pose.roll = max(min(roll, 20), -20)
-    pose.pitch = max(min(pitch, 30), -30)
-    pose.yaw = max(min(yaw, 30), -30)
-    pose.body_height = max(min(body_height, 0.1), -0.1)
+    rospy.wait_for_service('spot/posed_stand')
 
-    client.wait_for_server()
+    pose_client = rospy.ServiceProxy('spot/posed_stand', PosedStand)
 
-    client.send_goal_and_wait(pose)
-
-    return(client.get_result())
+    return(pose_client(max(min(body_height, 0.1), -0.1),
+                       max(min(yaw, 30), -30), 
+                       max(min(pitch, 30), -30), 
+                       max(min(roll, 20), -20)))

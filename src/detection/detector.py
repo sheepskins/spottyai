@@ -1,3 +1,5 @@
+#!/bin/python3
+
 import yolov5
 import rospy
 import pandas as pd
@@ -31,18 +33,14 @@ class Detector:
     
     def detect(self, img, key_cats):
         results = self.model(img)
-        key_cats = [cat.lower() for cat in key_cats]
         categories = ['x1', 'y1', 'x2', 'y2', 'score', 'category']
         predictions = pd.DataFrame(results.pred[0].cpu(), columns=categories)
         detections = predictions.merge(self.categories, on = 'category')
-        filtered_detections = detections[detections['category'].isin(key_cats)]
+        filtered_detections = detections[detections["labels"].isin(key_cats)]
         if filtered_detections.empty:
             return False
-        return filtered_detections.iloc[:,:4]
+        return filtered_detections
     
-
-        
-
 class RosBridge:
     def __init__(self):
         self.ros_detector = Detector('config/config.json')
@@ -57,26 +55,35 @@ class RosBridge:
         success = 1
         try:
             for cam in self.spot_cams: 
-                im_topic = "camera/" + cam + "/image"
-                depth_topic = "depth/" + cam + "/image"
-                im = rospy.wait_for_message(im_topic, Image)
-                depth_im = rospy.wait_for_message(depth_topic, CameraInfo)
+                im_topic = "/spot/camera/" + cam + "/image"
+                depth_topic = "spot/depth/" + cam + "/depth_in_visual"            
+                im = rospy.wait_for_message(im_topic, Image)        
+                depth_im = rospy.wait_for_message(depth_topic, Image)
                 cv_im = self.bridge.imgmsg_to_cv2(im)
                 depth_cv_im = self.bridge.imgmsg_to_cv2(depth_im)
                 df = self.ros_detector.detect(cv_im, categories)
-                
                 if df is not False:        
-                    simple_df = pd.DataFrame()
+                    num_rows = df.shape[0]
+                    simple_df = pd.DataFrame({
+                        'u': [0] * num_rows,
+                        'v': [0] * num_rows,
+                        'depth': [0] * num_rows,
+                        'category': [0] * num_rows,
+                        'camera': [''] * num_rows,
+                    })
+
                     for index, row in df.iterrows(): 
-                        x = (row['x2'] - row['x1'])/2
-                        y = (row['y2'] - row['y1'])/2 
+                        x = int((row['x2'] - row['x1'])/2)
+                        y = int((row['y2'] - row['y1'])/2)
                         simple_df.at[index, 'u'] = x
                         simple_df.at[index, 'v'] = y
                         simple_df.at[index, 'depth'] = depth_cv_im[x,y]
-                        simple_df.at[index, 'category'] = row['category']
+                        simple_df.at[index, 'category'] = row['labels']
+                        
                     simple_df['camera'] = cam
-                    detections_df = pd.concat([simple_df, df], ignore_index=True)
-            if ~detections_df.empty:
+                    detections_df = pd.concat([detections_df, simple_df], ignore_index=True)
+            print(detections_df)
+            if not detections_df.empty:
                 success = 1
                 string =  detections_df.to_json(orient='split')
         except:
@@ -85,7 +92,7 @@ class RosBridge:
         return success, string
         
     def service_handle(self, req):
-        categories = [category.strip() for category in req.categories.split(',')]
+        categories = [category.strip().lower() for category in req.categories.split(',')]
         success, dataframe_json  = self.callback(categories)
         return detectionResponse(success, dataframe_json)
 

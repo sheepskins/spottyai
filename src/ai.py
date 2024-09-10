@@ -1,6 +1,8 @@
 from sensor_msgs.msg import CameraInfo
 import rospy
-from spottyai.srv import detection, detectionResponse
+
+from aruco_opencv_msgs.msg import ArucoDetection
+
 from spot_msgs.msg import TrajectoryAction, TrajectoryResult, TrajectoryFeedback, TrajectoryGoal
 from std_msgs.msg import Duration
 import actionlib
@@ -14,27 +16,39 @@ import sys
 import os
 sys.path.append(os.path.dirname(__file__))
 
-import detection.detector as detector
-
 import pandas as pd
 
-def detect(categories):
-    rospy.wait_for_service('detection_service')
-    print(f'looking for {categories}')
-    try:
-        detector = rospy.ServiceProxy('detection_service', detection)
-        response = detector(categories)
-        if response.status == 1:
-            df = pd.read_json(response.detection_results, orient='split')
-            return df
-        else: 
-            return False
-    except rospy.ServiceException as e:
-        rospy.logerr(f"Service call failed: {e}")
-        return None
+def detect(keys):
+    return_df = pd.DataFrame(columns=('x', 'y', 'id', 'label'))
+    spot_cams = ["back", "frontleft", "frontright", "right", "left"]
+    keys = [category.strip().lower() for category in keys.split(',')]
+    categories = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)),'mscoco.csv'), header=None, names=['id', 'label'])
+    for cam in spot_cams:
+        topic = cam+"/aruco_detections"
+        camera_info = get_camera_info_once(cam)
+        frame_id = camera_info.header.frame_id
+
+        detections = rospy.wait_for_message(topic, ArucoDetection, rospy.Duration(1))
+        data = []
+        for marker in detections.markers:
+            pose = marker.pose
+            body_point = reproject(pose.position.x, pose.position.y, pose.position.z, frame_id)
+
+            data.append({
+                'x': body_point.point.x,
+                'y': body_point.point.y,
+                'id': marker.marker_id
+            })
+
+        # Create DataFrame from the processed data
+        detections_df = pd.DataFrame(data, columns=['x', 'y', 'id'])
+        detections_w_cat = detections_df.merge(categories, on = 'id')
+        # filtered_detections = detections_w_cat[detections_w_cat["label"].isin(keys)]
+        return_df = pd.concat([return_df, detections_w_cat], ignore_index=True)
+    return return_df
 
 def move_to(x,y):
-    client = actionlib.SimpleActionClient('trajectory', TrajectoryAction)
+    client = actionlib.SimpleActionClient('/spot/trajectory', TrajectoryAction)
     
     goal = TrajectoryGoal()
 
@@ -42,7 +56,10 @@ def move_to(x,y):
     goal.target_pose.header.frame_id = 'body'
     goal.target_pose.pose.position.x = x
     goal.target_pose.pose.position.y = y
-    goal.duration = rospy.Duration(120)
+    duration = Duration()
+    duration.data.secs = 120
+    duration.data.nsecs = 0
+    goal.duration = duration
 
     goal.precise_positioning = 0
     
@@ -54,23 +71,11 @@ def move_to(x,y):
 
     return client.get_result()
 
-def reproject(u, v, depth, cam):
-    camera_info = get_camera_info_once(cam)
-
-    # Extract camera intrinsics
-    fx = camera_info.K[0]
-    fy = camera_info.K[4]
-    cx = camera_info.K[2]
-    cy = camera_info.K[5]
-
-    # Compute the 3D point in the camera frame
-    x = (u - cx) * depth / fx
-    y = (v - cy) * depth / fy
-    z = depth
+def reproject(x,y,z, frame_id):   
 
     # Create a PointStamped message for the 3D point
     point_camera = PointStamped()
-    point_camera.header.frame_id = camera_info.header.frame_id
+    point_camera.header.frame_id = frame_id
     point_camera.point.x = x
     point_camera.point.y = y
     point_camera.point.z = z
@@ -97,7 +102,7 @@ def get_camera_info_once(cam):
     camera_info_msg = rospy.wait_for_message(topic, CameraInfo)
 
     # Process the message
-    rospy.loginfo(f"Received Camera Info: {camera_info_msg}")
+    # rospy.loginfo(f"Received Camera Info: {camera_info_msg}")
     return camera_info_msg
 
 def say(string):

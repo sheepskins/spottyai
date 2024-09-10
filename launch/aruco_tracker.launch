@@ -1,0 +1,56 @@
+<launch>
+  <group ns="back">
+    <node name="aruco_tracker_back" pkg="nodelet" type="nodelet"
+      args="standalone aruco_opencv/ArucoTracker" output="screen">
+      <rosparam command="load"
+        file="$(find aruco_opencv)/config/aruco_tracker.yaml" />
+      <param name="cam_base_topic" value="/spot/camera/back/image"/>
+      <param name="board_descriptions_path"
+      value="$(find aruco_opencv)/config/board_descriptions.yaml" />
+    </node>
+  </group>
+
+  <group ns="frontleft">
+    <node name="aruco_tracker_frontleft" pkg="nodelet" type="nodelet"
+      args="standalone aruco_opencv/ArucoTracker" output="screen">
+      <rosparam command="load"
+        file="$(find aruco_opencv)/config/aruco_tracker.yaml" />
+      <param name="cam_base_topic" value="/spot/camera/frontleft/image"/>
+      <param name="board_descriptions_path"
+      value="$(find aruco_opencv)/config/board_descriptions.yaml" />
+    </node>
+  </group>
+
+  <group ns="frontright">
+    <node name="aruco_tracker_frontright" pkg="nodelet" type="nodelet"
+      args="standalone aruco_opencv/ArucoTracker" output="screen">
+      <rosparam command="load"
+        file="$(find aruco_opencv)/config/aruco_tracker.yaml" />
+      <param name="cam_base_topic" value="/spot/camera/frontright/image"/>
+      <param name="board_descriptions_path"
+      value="$(find aruco_opencv)/config/board_descriptions.yaml" />
+    </node>
+  </group>
+
+  <group ns="right">
+    <node name="aruco_tracker_right" pkg="nodelet" type="nodelet"
+      args="standalone aruco_opencv/ArucoTracker" output="screen">
+      <rosparam command="load"
+        file="$(find aruco_opencv)/config/aruco_tracker.yaml" />
+      <param name="cam_base_topic" value="/spot/camera/right/image"/>
+      <param name="board_descriptions_path"
+      value="$(find aruco_opencv)/config/board_descriptions.yaml" />
+    </node>
+  </group>
+
+  <group ns="left">
+    <node name="aruco_tracker_left" pkg="nodelet" type="nodelet"
+      args="standalone aruco_opencv/ArucoTracker" output="screen">
+      <rosparam command="load"
+        file="$(find aruco_opencv)/config/aruco_tracker.yaml" />
+      <param name="cam_base_topic" value="/spot/camera/left/image"/>
+      <param name="board_descriptions_path"
+      value="$(find aruco_opencv)/config/board_descriptions.yaml" />
+    </node>
+  </group>
+</launch> 

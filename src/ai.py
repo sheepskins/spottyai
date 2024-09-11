@@ -48,7 +48,7 @@ def detect(keys):
             detections_w_cat = detections_df.merge(categories, on = 'id')
             filtered_detections = detections_w_cat[detections_w_cat["label"].isin(keys)]
             return_df = pd.concat([return_df, filtered_detections], ignore_index=True)
-        if return_df.empty():
+        if return_df.empty:
             return None
         else:
             return return_df    

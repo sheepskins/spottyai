@@ -11,6 +11,8 @@ from image_geometry import PinholeCameraModel
 import tf2_ros
 import tf2_geometry_msgs
 from spot_msgs.srv import PosedStand
+from openai import OpenAI
+from playsound import playsound
 
 import sys
 import os
@@ -19,33 +21,40 @@ sys.path.append(os.path.dirname(__file__))
 import pandas as pd
 
 def detect(keys):
-    return_df = pd.DataFrame(columns=('x', 'y', 'id', 'label'))
-    spot_cams = ["back", "frontleft", "frontright", "right", "left"]
-    keys = [category.strip().lower() for category in keys.split(',')]
-    categories = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)),'mscoco.csv'), header=None, names=['id', 'label'])
-    for cam in spot_cams:
-        topic = cam+"/aruco_detections"
-        camera_info = get_camera_info_once(cam)
-        frame_id = camera_info.header.frame_id
+    try:
+        return_df = pd.DataFrame(columns=('x', 'y', 'id', 'label'))
+        spot_cams = ["back", "frontleft", "frontright", "right", "left"]
+        keys = [category.strip().lower() for category in keys.split(',')]
+        categories = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)),'mscoco.csv'), header=None, names=['id', 'label'])
+        for cam in spot_cams:
+            topic = cam+"/aruco_detections"
+            camera_info = get_camera_info_once(cam)
+            frame_id = camera_info.header.frame_id
 
-        detections = rospy.wait_for_message(topic, ArucoDetection, rospy.Duration(1))
-        data = []
-        for marker in detections.markers:
-            pose = marker.pose
-            body_point = reproject(pose.position.x, pose.position.y, pose.position.z, frame_id)
+            detections = rospy.wait_for_message(topic, ArucoDetection, rospy.Duration(1))
+            data = []
+            for marker in detections.markers:
+                pose = marker.pose
+                body_point = reproject(pose.position.x, pose.position.y, pose.position.z, frame_id)
 
-            data.append({
-                'x': body_point.point.x,
-                'y': body_point.point.y,
-                'id': marker.marker_id
-            })
+                data.append({
+                    'x': body_point.point.x,
+                    'y': body_point.point.y,
+                    'id': marker.marker_id
+                })
 
-        # Create DataFrame from the processed data
-        detections_df = pd.DataFrame(data, columns=['x', 'y', 'id'])
-        detections_w_cat = detections_df.merge(categories, on = 'id')
-        # filtered_detections = detections_w_cat[detections_w_cat["label"].isin(keys)]
-        return_df = pd.concat([return_df, detections_w_cat], ignore_index=True)
-    return return_df
+            # Create DataFrame from the processed data
+            detections_df = pd.DataFrame(data, columns=['x', 'y', 'id'])
+            detections_w_cat = detections_df.merge(categories, on = 'id')
+            filtered_detections = detections_w_cat[detections_w_cat["label"].isin(keys)]
+            return_df = pd.concat([return_df, filtered_detections], ignore_index=True)
+        if return_df.empty():
+            return None
+        else:
+            return return_df    
+    except Exception as e:
+        rospy.logerr(e)
+        return False
 
 def move_to(x,y):
     client = actionlib.SimpleActionClient('/spot/trajectory', TrajectoryAction)
@@ -106,7 +115,17 @@ def get_camera_info_once(cam):
     return camera_info_msg
 
 def say(string):
-    print(string)
+    speech_file_path = os.path.dirname(os.path.abspath(__file__)) + "/speech.mp3"
+    client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+    response = client.audio.speech.create(
+        model='tts-1',
+        voice='onyx',
+        input=string,
+    )
+    response.stream_to_file(speech_file_path)
+    playsound(speech_file_path)
+    
+
 
 def ask(string):
     string = string + ": "

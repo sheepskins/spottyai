@@ -26,7 +26,7 @@ executor = LocalCommandLineCodeExecutor(
 code_executor = ConversableAgent(
     "code_executor_agent",
     llm_config=False, 
-    code_execution_config={"exector": executor},
+    code_execution_config={"executor": executor},
     human_input_mode="ALWAYS" #always request human input before executing
 )
 

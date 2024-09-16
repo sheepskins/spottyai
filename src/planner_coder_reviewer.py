@@ -3,6 +3,8 @@ import autogen
 from autogen import ConversableAgent, GroupChatManager, GroupChat
 from autogen.coding import LocalCommandLineCodeExecutor
 import tempfile
+import re
+import json
 
 #find system prompts
 script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -77,14 +79,22 @@ allowed_transitions = {
     user: [Coder],
 }
 
+def speaker_select(last_speaker: autogen.Agent, group_chat: autogen.GroupChat):
+    if len(group_chat.messages) <= 1:
+        return Planner
+    else:
+        return "auto"
+    
 group_chat = GroupChat(
-    agents=[code_executor, Coder, Reviewer, user],
+    agents=[code_executor, Planner, Coder, Reviewer, user],
     allowed_or_disallowed_speaker_transitions=allowed_transitions,
     speaker_transitions_type="allowed",
     messages=[],
     max_round=12,
     send_introductions=True,
+    speaker_selection_method=speaker_select
 )
+
 
 manager = GroupChatManager(
     groupchat=group_chat,
@@ -92,11 +102,23 @@ manager = GroupChatManager(
 )
 
 if __name__ == "__main__":
-    while True:
-        task = input("What would you like spot to do?")
-        if task:
-            chat = user.initiate_chat(manager, message=task)
-        else:
-            break
+    path = os.path.dirname(os.path.abspath(__file__))
+    dir_path = path + "/trials/config_c"
+
+    task = input("Prompt: ")
+    chat = user.initiate_chat(manager, message=task, summary_method="last_msg")
+
+    file_num = len([name for name in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, name))])
+    trial, repeat = divmod(file_num,3)
+    file_name = "config_c_" + str(trial+1) + str(repeat+1) + ".py"
+    full_path = os.path.join(dir_path, file_name)
+    with open(full_path, "w") as file: 
+        file.write("'''")  
+        file.write(task)
+        file.write("'''")
+        file.write("'''")  
+        json.dump(autogen.agentchat.gather_usage_summary([manager, Coder, Reviewer, Planner]),file)
+        file.write("'''")
+        file.write(re.search(r'```(.*?)```', chat.summary, re.S).group(1))
 
 

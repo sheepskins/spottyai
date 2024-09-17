@@ -15,7 +15,6 @@ with open(coder_path, 'r') as file:
     system_prompt = file.read()
 
 #set up coder LLM
-print(os.environ["OPENAI_API_KEY"])
 llm_config = {"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"], "cache_seed": None}
 
 # Create a local command line code executor.
@@ -24,23 +23,25 @@ executor = LocalCommandLineCodeExecutor(
     timeout=600,  # Timeout for each code execution in seconds.
     work_dir=temp_dir.name
 )
+class AI():
+    def __init__(self): 
+        self.code_executor = ConversableAgent(
+            "code_executor_agent",
+            llm_config=False, 
+            code_execution_config={"executor": executor},
+            human_input_mode="ALWAYS" #always request human input before executing
+        )
 
-code_executor = ConversableAgent(
-    "code_executor_agent",
-    llm_config=False, 
-    code_execution_config={"executor": executor},
-    human_input_mode="ALWAYS" #always request human input before executing
-)
-
-Coder = ConversableAgent(
-    name="Spotty_ai",
-    system_message=system_prompt,
-    llm_config=llm_config,
-    code_execution_config=False,
-    is_termination_msg=lambda msg: "terminate" in msg["content"].lower(),
-)
+        self.Coder = ConversableAgent(
+            name="Spotty_ai",
+            system_message=system_prompt,
+            llm_config=llm_config,
+            code_execution_config=False,
+            is_termination_msg=lambda msg: "terminate" in msg["content"].lower(),
+        )
 
 def main(task):
+    ai = AI()
     path = os.path.dirname(os.path.abspath(__file__))
     dir_path = path + "/trials/config_a"
     prompt = ""
@@ -48,7 +49,7 @@ def main(task):
         prompt = task
     else:
         prompt = input("Prompt: ")
-    chat = code_executor.initiate_chat(Coder, message=prompt, summary_method="last_msg")
+    chat = ai.code_executor.initiate_chat(ai.Coder, message=prompt, summary_method="last_msg")
 
     file_num = len([name for name in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, name))])
     trial, repeat = divmod(file_num,7)

@@ -1,0 +1,1 @@
+'''Help! I think I've been bitten by a snake.''''''{"usage_including_cached_inference": {"total_cost": 0.8979900000000001, "gpt-4-0613": {"cost": 0.8979900000000001, "prompt_tokens": 28425, "completion_tokens": 754, "total_tokens": 29179}}, "usage_excluding_cached_inference": {"total_cost": 0}}'''

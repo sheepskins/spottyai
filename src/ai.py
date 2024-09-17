@@ -12,7 +12,8 @@ import tf2_ros
 import tf2_geometry_msgs
 from spot_msgs.srv import PosedStand
 from openai import OpenAI
-from playsound import playsound
+from pydub import AudioSegment
+from pydub.playback import play
 
 import sys
 import os
@@ -123,11 +124,22 @@ def say(string):
         input=string,
     )
     response.stream_to_file(speech_file_path)
-    playsound(speech_file_path)
+    sound = AudioSegment.from_file(speech_file_path, format="mp3")
+    play(sound) 
     
 
 
 def ask(string):
+    speech_file_path = os.path.dirname(os.path.abspath(__file__)) + "/speech.mp3"
+    client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
+    response = client.audio.speech.create(
+        model='tts-1',
+        voice='onyx',
+        input=string,
+    )
+    response.stream_to_file(speech_file_path)
+    sound = AudioSegment.from_file(speech_file_path, format="mp3")
+    play(sound) 
     string = string + ": "
     return input(string)
     

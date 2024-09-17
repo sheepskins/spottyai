@@ -40,12 +40,15 @@ Coder = ConversableAgent(
     is_termination_msg=lambda msg: "terminate" in msg["content"].lower(),
 )
 
-if __name__ == "__main__":
+def main(task):
     path = os.path.dirname(os.path.abspath(__file__))
     dir_path = path + "/trials/config_a"
-
-    task = input("Prompt: ")
-    chat = code_executor.initiate_chat(Coder, message=task, summary_method="last_msg")
+    prompt = ""
+    if task is not None:
+        prompt = task
+    else:
+        prompt = input("Prompt: ")
+    chat = code_executor.initiate_chat(Coder, message=prompt, summary_method="last_msg")
 
     file_num = len([name for name in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, name))])
     trial, repeat = divmod(file_num,7)
@@ -59,5 +62,8 @@ if __name__ == "__main__":
         json.dump(chat.cost,file)
         file.write("'''")
         file.write(re.search(r'```(.*?)```', chat.summary, re.S).group(1))
+
+if __name__ == "__main__":
+    main()
 
 

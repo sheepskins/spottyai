@@ -101,12 +101,16 @@ manager = GroupChatManager(
     llm_config = llm_config
 )
 
-if __name__ == "__main__":
+def main(task):
     path = os.path.dirname(os.path.abspath(__file__))
     dir_path = path + "/trials/config_c"
 
-    task = input("Prompt: ")
-    chat = user.initiate_chat(manager, message=task, summary_method="last_msg")
+    prompt = ""
+    if task is not None:
+        prompt = task
+    else:
+        prompt = input("Prompt: ")
+    chat = user.initiate_chat(manager, message=prompt, summary_method="last_msg")
 
     file_num = len([name for name in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, name))])
     trial, repeat = divmod(file_num,7)
@@ -120,5 +124,8 @@ if __name__ == "__main__":
         json.dump(autogen.agentchat.gather_usage_summary([manager, Coder, Reviewer, Planner]),file)
         file.write("'''")
         file.write(re.search(r'```(.*?)```', chat.summary, re.S).group(1))
+
+if __name__ == "__main__":
+    main()  
 
 

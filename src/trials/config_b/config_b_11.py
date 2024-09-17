@@ -1,19 +1,28 @@
-'''take me to the nearest chair''''''{"usage_including_cached_inference": {"total_cost": 0.27426, "gpt-4-0613": {"cost": 0.27426, "prompt_tokens": 8492, "completion_tokens": 325, "total_tokens": 8817}}, "usage_excluding_cached_inference": {"total_cost": 0.27426, "gpt-4-0613": {"cost": 0.27426, "prompt_tokens": 8492, "completion_tokens": 325, "total_tokens": 8817}}}'''
-from ai import detect, move_to, say
+'''Take me to the nearest chair''''''{"usage_including_cached_inference": {"total_cost": 0.27117, "gpt-4-0613": {"cost": 0.27117, "prompt_tokens": 8521, "completion_tokens": 259, "total_tokens": 8780}}, "usage_excluding_cached_inference": {"total_cost": 0.27117, "gpt-4-0613": {"cost": 0.27117, "prompt_tokens": 8521, "completion_tokens": 259, "total_tokens": 8780}}}'''
+from ai import detect, move_to, say, ask, pose
 import rospy
 import pandas as pd
 
 rospy.init_node('SPOTTYAI')
 
-# Detect the nearest chair.
-detections = detect('chair')
-if isinstance(detections, pd.DataFrame) and not detections.empty:
-    # The nearest chair is the one with the smallest Euclidean distance.
-    detections['distance'] = detections.apply(lambda row: row['x']**2 + row['y']**2, axis=1)
-    nearest_chair = detections.loc[detections['distance'].idxmin()]
-    say('Moving to the nearest chair.')
-    move_to(nearest_chair['x'], nearest_chair['y'])
-elif detections is None:
-    say('No chair detected.')
-elif detections is False:
-    say('Failed to detect objects.')
+# Our main goal is to detect a chair and move towards it.
+# First, we will call the detect function to detect the chair
+# If chair is detected, it will return a dataframe containing the chair's location. Otherwise, it will return None.
+
+chair_position = detect('chair')
+
+if isinstance(chair_position, pd.DataFrame):
+  x = chair_position['x'][0]
+  y = chair_position['y'][0]
+  
+  say("A chair has been detected. Now moving towards the chair.") 
+
+  result = move_to(x, y)
+
+  if result:
+     say("You have reached to the chair.")
+  else:
+    say("Sorry, I was unable to reach the chair. Let's try detecting again.")
+
+else:
+  say("No chair detected. Please ensure that there is a chair detected in the surroundings.")

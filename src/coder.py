@@ -48,8 +48,8 @@ if __name__ == "__main__":
     chat = code_executor.initiate_chat(Coder, message=task, summary_method="last_msg")
 
     file_num = len([name for name in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, name))])
-    trial, repeat = divmod(file_num,3)
-    file_name = "config_a_" + str(trial+1) + str(repeat+1) + ".py"
+    trial, repeat = divmod(file_num,7)
+    file_name = "config_a_" + str(repeat+1) + str(trial+1) + ".py"
     full_path = os.path.join(dir_path, file_name)
     with open(full_path, "w") as file: 
         file.write("'''")  

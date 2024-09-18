@@ -97,9 +97,10 @@ def main(task):
     full_path = os.path.join(dir_path, file_name)
     with open(full_path, "w") as file: 
         file.write("'''")  
-        file.write(task)
+        file.write(prompt)
         file.write("'''")
-        file.write("'''")  
+        file.write("'''")
+        print(json.dumps(autogen.agentchat.gather_usage_summary([ai.manager, ai.Coder, ai.Reviewer])))
         json.dump(autogen.agentchat.gather_usage_summary([ai.manager, ai.Coder, ai.Reviewer]),file)
         file.write("'''")
         file.write(re.search(r'```(.*?)```', chat.summary, re.S).group(1))

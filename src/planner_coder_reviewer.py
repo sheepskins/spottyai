@@ -73,23 +73,17 @@ class AI():
             code_execution_config=False,
         )
 
-        allowed_transitions = {
+        self.allowed_transitions = {
             self.Planner: [self.Coder],
             self.Coder: [self.Reviewer],
             self.Reviewer: [self.Coder, self.code_executor],
             self.code_executor: [self.Reviewer],
             self.user: [self.Coder],
         }
-
-        def speaker_select(last_speaker: autogen.Agent, group_chat: autogen.GroupChat):
-            if len(group_chat.messages) <= 1:
-                return self.Planner
-            else:
-                return "auto"
             
-        group_chat = GroupChat(
+        self.group_chat = GroupChat(
             agents=[self.code_executor, self.Planner, self.Coder, self.Reviewer, self.user],
-            allowed_or_disallowed_speaker_transitions=allowed_transitions,
+            allowed_or_disallowed_speaker_transitions=self.allowed_transitions,
             speaker_transitions_type="allowed",
             messages=[],
             max_round=12,
@@ -98,10 +92,16 @@ class AI():
         )
 
 
-        manager = GroupChatManager(
-            groupchat=group_chat,
+        self.manager = GroupChatManager(
+            groupchat=self.group_chat,
             llm_config = llm_config
         )
+
+    def speaker_select(self, last_speaker: autogen.Agent, group_chat: autogen.GroupChat):
+        if len(group_chat.messages) <= 1:
+            return self.Planner
+        else:
+            return "auto"
 
 def main(task):
     ai = AI()
@@ -121,14 +121,15 @@ def main(task):
     full_path = os.path.join(dir_path, file_name)
     with open(full_path, "w") as file: 
         file.write("'''")  
-        file.write(task)
+        file.write(prompt)
         file.write("'''")
         file.write("'''")  
+        print(json.dumps(autogen.agentchat.gather_usage_summary([ai.manager, ai.Coder, ai.Reviewer, ai.Planner])))
         json.dump(autogen.agentchat.gather_usage_summary([ai.manager, ai.Coder, ai.Reviewer, ai.Planner]),file)
         file.write("'''")
         file.write(re.search(r'```(.*?)```', chat.summary, re.S).group(1))
 
 if __name__ == "__main__":
-    main()  
+    main(None)  
 
 

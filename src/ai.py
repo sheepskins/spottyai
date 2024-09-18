@@ -116,7 +116,7 @@ def get_camera_info_once(cam):
     return camera_info_msg
 
 def say(string):
-    string = "Speaking: " + string
+    # string = "Speaking: " + string
     speech_file_path = os.path.dirname(os.path.abspath(__file__)) + "/speech.mp3"
     client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
     response = client.audio.speech.create(
@@ -131,7 +131,7 @@ def say(string):
 
 
 def ask(string):
-    string = "Asking: " + string
+    # string = "Asking: " + string
     speech_file_path = os.path.dirname(os.path.abspath(__file__)) + "/speech.mp3"
     client = OpenAI(api_key=os.environ['OPENAI_API_KEY'])
     response = client.audio.speech.create(

@@ -57,7 +57,7 @@ def main(task):
     full_path = os.path.join(dir_path, file_name)
     with open(full_path, "w") as file: 
         file.write("'''")  
-        file.write(task)
+        file.write(prompt)
         file.write("'''")
         file.write("'''")
         print(chat.cost)  
@@ -66,6 +66,6 @@ def main(task):
         file.write(re.search(r'```(.*?)```', chat.summary, re.S).group(1))
 
 if __name__ == "__main__":
-    main()
+    main(None)
 
 

@@ -5,6 +5,7 @@ from autogen.coding import LocalCommandLineCodeExecutor
 import tempfile
 import re
 import json
+import csv
     
 #find system prompts
 script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -27,7 +28,7 @@ llm_config = {"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"], 'cache_
 temp_dir = tempfile.TemporaryDirectory() # temp directory for the code exector
 executor = LocalCommandLineCodeExecutor(
     timeout=600,  # Timeout for each code execution in seconds.
-    work_dir=temp_dir.name
+    work_dir= script_dir + '/src'
 )
 
 class AI():
@@ -82,29 +83,36 @@ class AI():
 
 def main(task):
     ai = AI()
-    path = os.path.dirname(os.path.abspath(__file__))
-    dir_path = path + "/trials/config_b"
     prompt = ""
     if task is not None:
         prompt = task
     else:
-        prompt = input("Prompt: ")
+        print("Enter your prompt!")
+        prompt = input()
+        print(prompt)
     chat = ai.user.initiate_chat(ai.manager, message=prompt, summary_method="last_msg")
 
-    file_num = len([name for name in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, name))])
-    trial, repeat = divmod(file_num,7)
-    file_name = "config_b_" + str(repeat+1) + str(trial+1) + ".py"
-    full_path = os.path.join(dir_path, file_name)
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '/data')
+    file_name = 'usage.csv'
+    full_path = os.path.join(path, file_name)
     with open(full_path, "w") as file: 
-        file.write("'''")  
-        file.write(prompt)
-        file.write("'''")
-        file.write("'''")
-        print(json.dumps(autogen.agentchat.gather_usage_summary([ai.manager, ai.Coder, ai.Reviewer])))
-        json.dump(autogen.agentchat.gather_usage_summary([ai.manager, ai.Coder, ai.Reviewer]),file)
-        file.write("'''")
-        file.write(re.search(r'```(.*?)```', chat.summary, re.S).group(1))
+        # Parse the JSON string
+        data = autogen.agentchat.gather_usage_summary([ai.manager, ai.Coder, ai.Reviewer])
+
+        # Extract values from cached inference section
+        cached_inference = data['usage_including_cached_inference']['gpt-4-0613']
+        cost = cached_inference['cost']
+        prompt_tokens = cached_inference['prompt_tokens']
+        completion_tokens = cached_inference['completion_tokens']
+
+        # Prepare CSV row
+        csv_row = [prompt, cost, prompt_tokens, completion_tokens]
+        csv_writer = csv.writer(file)
+        csv_writer.writerow(csv_row)
+
 
 if __name__ == "__main__":
-    main(None)
+    while True:
+      main(None)
+    
 

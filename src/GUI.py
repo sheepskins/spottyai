@@ -6,7 +6,7 @@ from PyQt5.QtCore import Qt, QThread, pyqtSignal, QObject
 from PyQt5.QtGui import QMovie
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
-    QPushButton, QTextEdit, QLabel, QTabWidget, QTableWidget, QTableWidgetItem
+    QPushButton, QTextEdit, QLabel, QTabWidget, QTableWidget, QTableWidgetItem, QSizePolicy
 )
 
 # ----------------------------
@@ -71,7 +71,8 @@ class SpeechRecognitionSection(QWidget):
         
         # Detected Speech Display
         self.detected_speech = QTextEdit()
-        self.detected_speech.setReadOnly(True)
+        self.detected_speech.setReadOnly(False)
+        self.detected_speech.setFixedHeight(self.detected_speech.fontMetrics().height() * 2)  # Fixed height for 2 lines
         self.layout.addWidget(QLabel("Detected Speech:"))
         self.layout.addWidget(self.detected_speech)
         
@@ -83,6 +84,7 @@ class SpeechRecognitionSection(QWidget):
         self.button_layout.addWidget(self.clear_button)
         
         self.push_to_talk_button = QPushButton("Push to Talk")
+        self.push_to_talk_button.setEnabled(False)
         self.push_to_talk_button.setCheckable(True)
         self.push_to_talk_button.pressed.connect(self.start_listening)
         self.push_to_talk_button.released.connect(self.stop_listening)
@@ -125,6 +127,7 @@ class SpeechRecognitionSection(QWidget):
     
     def update_text(self, text):
         self.detected_speech.append(text)
+        self.detected_speech.verticalScrollBar().setValue(self.detected_speech.verticalScrollBar().maximum())  # Auto-scroll to the bottom
     
     def send_to_robot(self):
         text = self.detected_speech.toPlainText().strip()
@@ -151,7 +154,7 @@ class RobotScriptWorker(QObject):
     
     def run(self):
         self.process = subprocess.Popen(
-            ["python", "src/coder_reviewer.py"],
+            ["python", "src/coder_reviewer_dance.py"],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -184,22 +187,18 @@ class RobotThinkingSection(QWidget):
         self.layout = QVBoxLayout()
         self.console = QTextEdit()
         self.console.setReadOnly(True)
+        self.console.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)  # Allow expansion
+        self.console.setMinimumHeight(1000)  # Adjust as necessary
         self.layout.addWidget(QLabel("Robot Thoughts:"))
         self.layout.addWidget(self.console)
-        
-        # Swirling Icon
-        self.icon_label = QLabel()
-        self.movie = QMovie('assets/spinner.gif')  # Ensure you have a spinner.gif in assets/
-        self.icon_label.setAlignment(Qt.AlignCenter)
-        self.icon_label.setFixedSize(100, 100)  # Adjust size as needed
-        self.layout.addWidget(self.icon_label)
-        self.icon_label.setMovie(self.movie)
-        self.movie.start()
+
+        self.layout.addStretch()
 
         self.reset_button = QPushButton("Reset")
         self.reset_button.setStyleSheet("background-color: red; color: white; font-size: 16px; padding: 10px;")
         self.reset_button.clicked.connect(self.reset_worker)
         self.layout.addWidget(self.reset_button)
+
 
         self.setLayout(self.layout)
         self.thread = None
@@ -208,6 +207,8 @@ class RobotThinkingSection(QWidget):
 
     def reset_worker(self):
         # Clear previous instances
+        self.console.clear()
+        
         if self.thread:
             self.worker.stop()
             self.thread.quit()
@@ -243,6 +244,7 @@ class RobotThinkingSection(QWidget):
 
     def update_thoughts(self, text):
         self.console.append(text)
+        self.console.verticalScrollBar().setValue(self.console.verticalScrollBar().maximum())  # Auto-scroll to the bottom
 
     def planner(self, recognized_text):
         if self.worker is None:
@@ -321,37 +323,6 @@ class HomeTab(QWidget):
         self.robot_thinking_section.planner(text)
 
 # ----------------------------
-# Performance Tab
-# ----------------------------
-class PerformanceTab(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.layout = QVBoxLayout()
-        
-        # Load CSV Data
-        try:
-            self.data = pd.read_csv('data/performance_data.csv')
-        except FileNotFoundError:
-            self.data = pd.DataFrame()  # Empty DataFrame if file not found
-        
-        if not self.data.empty:
-            self.table = QTableWidget()
-            self.table.setRowCount(len(self.data))
-            self.table.setColumnCount(len(self.data.columns))
-            self.table.setHorizontalHeaderLabels(self.data.columns)
-            
-            for i in range(len(self.data)):
-                for j in range(len(self.data.columns)):
-                    item = QTableWidgetItem(str(self.data.iat[i, j]))
-                    self.table.setItem(i, j, item)
-            
-            self.layout.addWidget(self.table)
-        else:
-            self.layout.addWidget(QLabel("No performance data available."))
-        
-        self.setLayout(self.layout)
-
-# ----------------------------
 # Main Window
 # ----------------------------
 class MainWindow(QMainWindow):
@@ -371,9 +342,7 @@ class MainWindow(QMainWindow):
         # Tabs
         self.tabs = QTabWidget()
         self.home_tab = HomeTab()
-        self.performance_tab = PerformanceTab()
         self.tabs.addTab(self.home_tab, "Home")
-        self.tabs.addTab(self.performance_tab, "Performance")
         self.main_layout.addWidget(self.tabs)
         
         self.central_widget.setLayout(self.main_layout)

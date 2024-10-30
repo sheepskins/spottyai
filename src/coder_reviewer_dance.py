@@ -9,13 +9,13 @@ import csv
     
 #find system prompts
 script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-coder_relative_file = 'knowledge/coder_prompt.xml'
+coder_relative_file = 'knowledge_dance/coder_prompt.xml'
 coder_path = os.path.join(script_dir, coder_relative_file)
 
 with open(coder_path, 'r') as file: 
     coder_prompt = file.read()
 
-reviewer_relative_file = 'knowledge/review_prompt.xml'
+reviewer_relative_file = 'knowledge_dance/review_prompt.xml'
 reviewer_path = os.path.join(script_dir, reviewer_relative_file)
 
 with open(reviewer_path, 'r') as file: 
@@ -54,7 +54,7 @@ class AI():
             is_termination_msg=lambda msg: "terminate" in msg["content"].lower()
         )
         self.user = ConversableAgent(
-            name="visually_impaired_user",
+            name="judge",
             llm_config=False,
             code_execution_config=False,
         )
@@ -91,23 +91,23 @@ def main(task):
         print(prompt)
     chat = ai.user.initiate_chat(ai.manager, message=prompt, summary_method="last_msg")
 
-    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '/data')
-    file_name = 'usage.csv'
-    full_path = os.path.join(path, file_name)
-    with open(full_path, "w") as file: 
-        # Parse the JSON string
-        data = autogen.agentchat.gather_usage_summary([ai.manager, ai.Coder, ai.Reviewer])
+    # path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '/data')
+    # file_name = 'usage.csv'
+    # full_path = os.path.join(path, file_name)
+    # with open(full_path, "w") as file: 
+    #     # Parse the JSON string
+    #     data = autogen.agentchat.gather_usage_summary([ai.manager, ai.Coder, ai.Reviewer])
 
-        # Extract values from cached inference section
-        cached_inference = data['usage_including_cached_inference']['gpt-4-0613']
-        cost = cached_inference['cost']
-        prompt_tokens = cached_inference['prompt_tokens']
-        completion_tokens = cached_inference['completion_tokens']
+    #     # Extract values from cached inference section
+    #     cached_inference = data['usage_including_cached_inference']['gpt-4-0613']
+    #     cost = cached_inference['cost']
+    #     prompt_tokens = cached_inference['prompt_tokens']
+    #     completion_tokens = cached_inference['completion_tokens']
 
-        # Prepare CSV row
-        csv_row = [prompt, cost, prompt_tokens, completion_tokens]
-        csv_writer = csv.writer(file)
-        csv_writer.writerow(csv_row)
+    #     # Prepare CSV row
+    #     csv_row = [prompt, cost, prompt_tokens, completion_tokens]
+    #     csv_writer = csv.writer(file)
+    #     csv_writer.writerow(csv_row)
 
 
 if __name__ == "__main__":

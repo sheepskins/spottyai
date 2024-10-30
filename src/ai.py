@@ -14,6 +14,7 @@ from spot_msgs.srv import PosedStand
 from openai import OpenAI
 from pydub import AudioSegment
 from pydub.playback import play
+import numpy as np
 
 import sys
 import os
@@ -57,7 +58,27 @@ def detect(keys):
         rospy.logerr(e)
         return False
 
-def move_to(x,y):
+
+def get_quaternion_from_euler(roll, pitch, yaw):
+  """
+  Convert an Euler angle to a quaternion.
+   
+  Input
+    :param roll: The roll (rotation around x-axis) angle in radians.
+    :param pitch: The pitch (rotation around y-axis) angle in radians.
+    :param yaw: The yaw (rotation around z-axis) angle in radians.
+ 
+  Output
+    :return qx, qy, qz, qw: The orientation in quaternion [x,y,z,w] format
+  """
+  qx = np.sin(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) - np.cos(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+  qy = np.cos(roll/2) * np.sin(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.cos(pitch/2) * np.sin(yaw/2)
+  qz = np.cos(roll/2) * np.cos(pitch/2) * np.sin(yaw/2) - np.sin(roll/2) * np.sin(pitch/2) * np.cos(yaw/2)
+  qw = np.cos(roll/2) * np.cos(pitch/2) * np.cos(yaw/2) + np.sin(roll/2) * np.sin(pitch/2) * np.sin(yaw/2)
+ 
+  return [qx, qy, qz, qw]
+
+def move_to(x,y,yaw):
     client = actionlib.SimpleActionClient('/spot/trajectory', TrajectoryAction)
     
     goal = TrajectoryGoal()
@@ -66,6 +87,11 @@ def move_to(x,y):
     goal.target_pose.header.frame_id = 'body'
     goal.target_pose.pose.position.x = x
     goal.target_pose.pose.position.y = y
+    quat = get_quaternion_from_euler(0,0,np.deg2rad(yaw))
+    goal.target_pose.pose.orientation.x = quat[0]
+    goal.target_pose.pose.orientation.y = quat[1]
+    goal.target_pose.pose.orientation.z = quat[2]
+    goal.target_pose.pose.orientation.w = quat[3]
     duration = Duration()
     duration.data.secs = 120
     duration.data.nsecs = 0

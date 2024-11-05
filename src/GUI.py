@@ -22,7 +22,7 @@ class Header(QWidget):
         self.logo = QLabel()
         
         # App Name
-        self.app_name = QLabel("Robot Control Panel")
+        self.app_name = QLabel("Request a dance from SPOT!")
         self.app_name.setStyleSheet("font-size: 24px; font-weight: bold;")
         self.layout.addWidget(self.app_name)
         
@@ -328,7 +328,7 @@ class HomeTab(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Robot Control Panel")
+        self.setWindowTitle("Request a dance from SPOT!")
         self.setGeometry(100, 100, 800, 600)
         
         # Main layout

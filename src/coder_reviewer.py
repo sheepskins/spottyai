@@ -22,7 +22,7 @@ with open(reviewer_path, 'r') as file:
     reviewer_prompt = file.read()
 
 #set up coder LLM
-llm_config = {"model": "gpt-4", "api_key": os.environ["OPENAI_API_KEY"], 'cache_seed': None}
+llm_config = {"model": "gpt-4o", "api_key": os.environ["OPENAI_API_KEY"], 'cache_seed': None}
 
 # Create a local command line code executor.
 temp_dir = tempfile.TemporaryDirectory() # temp directory for the code exector

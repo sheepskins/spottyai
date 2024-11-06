@@ -188,7 +188,7 @@ class RobotThinkingSection(QWidget):
         self.console = QTextEdit()
         self.console.setReadOnly(True)
         self.console.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)  # Allow expansion
-        self.console.setMinimumHeight(1000)  # Adjust as necessary
+        self.console.setMinimumHeight(500)  # Adjust as necessary
         self.layout.addWidget(QLabel("Robot Thoughts:"))
         self.layout.addWidget(self.console)
 
